@@ -1,16 +1,11 @@
-#![feature(raw)]
-
-extern crate num;
-
 use std::{mem,slice};
 use std::convert::{From,Into};
 use std::ops::{BitAnd,BitOr,BitXor};
-use std::raw::Repr;
 
 ///Type with a specified byte order
 pub trait Endian<T>{}
 
-macro_rules! impl_BitOp{
+macro_rules! impl_Endian{
 	( for $e:ident) => {
 		impl<T> BitAnd for $e<T>
 			where T: BitAnd
@@ -49,7 +44,7 @@ macro_rules! impl_BitOp{
 			#[inline]
 			pub fn from_bytes(bytes: &[u8]) -> Self{
 				debug_assert!(bytes.len() >= mem::size_of::<T>());
-				$e(unsafe{*(bytes.repr().data as *const T)})
+				$e(unsafe{*(bytes.as_ptr() as *const T)})
 			}
 
 			#[inline]
@@ -77,23 +72,7 @@ macro_rules! impl_BitOp{
 #[derive(Copy,Clone,Debug,Eq,PartialEq,Hash,Ord,PartialOrd)]
 pub struct BigEndian<T>(T);
 impl<T> Endian<T> for BigEndian<T>{}
-impl<T> From<T> for BigEndian<T>
-	where T: num::PrimInt
-{
-			#[inline]
-	fn from(data: T) -> Self{
-		BigEndian(data.to_be())
-	}
-}
-impl<T> From<LittleEndian<T>> for BigEndian<T>
-	where T: num::PrimInt
-{
-			#[inline]
-	fn from(data: LittleEndian<T>) -> Self{
-		BigEndian(data.0.swap_bytes())
-	}
-}
-macro_rules! impl_Into_for_BigEndian{
+macro_rules! impl_for_BigEndian{
 	( $t:ident ) => {
 		impl Into<$t> for BigEndian<$t>{
 			#[inline]
@@ -101,17 +80,31 @@ macro_rules! impl_Into_for_BigEndian{
 				$t::from_be(self.0)
 			}
 		}
+
+		impl From<$t> for BigEndian<$t>{
+			#[inline]
+			fn from(data: $t) -> Self{
+				BigEndian(data.to_be())
+			}
+		}
+
+		impl From<LittleEndian<$t>> for BigEndian<$t>{
+			#[inline]
+			fn from(data: LittleEndian<$t>) -> Self{
+				BigEndian(data.0.swap_bytes())
+			}
+		}
 	}
 }
-impl_BitOp!(for BigEndian);
-impl_Into_for_BigEndian!(u16);
-impl_Into_for_BigEndian!(u32);
-impl_Into_for_BigEndian!(u64);
-impl_Into_for_BigEndian!(usize);
-impl_Into_for_BigEndian!(i16);
-impl_Into_for_BigEndian!(i32);
-impl_Into_for_BigEndian!(i64);
-impl_Into_for_BigEndian!(isize);
+impl_Endian!(for BigEndian);
+impl_for_BigEndian!(u16);
+impl_for_BigEndian!(u32);
+impl_for_BigEndian!(u64);
+impl_for_BigEndian!(usize);
+impl_for_BigEndian!(i16);
+impl_for_BigEndian!(i32);
+impl_for_BigEndian!(i64);
+impl_for_BigEndian!(isize);
 
 
 
@@ -121,23 +114,7 @@ impl_Into_for_BigEndian!(isize);
 #[derive(Copy,Clone,Debug,Eq,PartialEq,Hash,Ord,PartialOrd)]
 pub struct LittleEndian<T>(T);
 impl<T> Endian<T> for LittleEndian<T>{}
-impl<T> From<T> for LittleEndian<T>
-	where T: num::PrimInt
-{
-			#[inline]
-	fn from(data: T) -> Self{
-		LittleEndian(data.to_le())
-	}
-}
-impl<T> From<BigEndian<T>> for LittleEndian<T>
-	where T: num::PrimInt
-{
-			#[inline]
-	fn from(data: BigEndian<T>) -> Self{
-		LittleEndian(data.0.swap_bytes())
-	}
-}
-macro_rules! impl_Into_for_LittleEndian{
+macro_rules! impl_for_LittleEndian{
 	( $t:ident ) => {
 		impl Into<$t> for LittleEndian<$t>{
 			#[inline]
@@ -145,17 +122,31 @@ macro_rules! impl_Into_for_LittleEndian{
 				$t::from_le(self.0)
 			}
 		}
+
+		impl From<$t> for LittleEndian<$t>{
+			#[inline]
+			fn from(data: $t) -> Self{
+				LittleEndian(data.to_be())
+			}
+		}
+
+		impl From<BigEndian<$t>> for LittleEndian<$t>{
+			#[inline]
+			fn from(data: BigEndian<$t>) -> Self{
+				LittleEndian(data.0.swap_bytes())
+			}
+		}
 	}
 }
-impl_BitOp!(for LittleEndian);
-impl_Into_for_LittleEndian!(u16);
-impl_Into_for_LittleEndian!(u32);
-impl_Into_for_LittleEndian!(u64);
-impl_Into_for_LittleEndian!(usize);
-impl_Into_for_LittleEndian!(i16);
-impl_Into_for_LittleEndian!(i32);
-impl_Into_for_LittleEndian!(i64);
-impl_Into_for_LittleEndian!(isize);
+impl_Endian!(for LittleEndian);
+impl_for_LittleEndian!(u16);
+impl_for_LittleEndian!(u32);
+impl_for_LittleEndian!(u64);
+impl_for_LittleEndian!(usize);
+impl_for_LittleEndian!(i16);
+impl_for_LittleEndian!(i32);
+impl_for_LittleEndian!(i64);
+impl_for_LittleEndian!(isize);
 
 
 ///Network byte order as defined by IETF RFC1700 [http://tools.ietf.org/html/rfc1700]
