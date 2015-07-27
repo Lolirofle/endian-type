@@ -2,7 +2,7 @@
 
 extern crate num;
 
-use std::{mem,ptr,slice};
+use std::{mem,slice};
 use std::convert::{From,Into};
 use std::ops::{BitAnd,BitOr,BitXor};
 use std::raw::Repr;
@@ -17,6 +17,7 @@ macro_rules! impl_BitOp{
 		{
 			type Output = $e<<T as BitAnd>::Output>;
 
+			#[inline]
 			fn bitand(self,other: Self) -> Self::Output{
 				$e(self.0 & other.0)
 			}
@@ -26,6 +27,7 @@ macro_rules! impl_BitOp{
 		{
 			type Output = $e<<T as BitOr>::Output>;
 
+			#[inline]
 			fn bitor(self,other: Self) -> Self::Output{
 				$e(self.0 | other.0)
 			}
@@ -35,6 +37,7 @@ macro_rules! impl_BitOp{
 		{
 			type Output = $e<<T as BitXor>::Output>;
 
+			#[inline]
 			fn bitxor(self,other: Self) -> Self::Output{
 				$e(self.0 ^ other.0)
 			}
@@ -43,11 +46,13 @@ macro_rules! impl_BitOp{
 		impl<T> $e<T>
 			where T: Sized + Copy
 		{
+			#[inline]
 			pub fn from_bytes(bytes: &[u8]) -> Self{
 				debug_assert!(bytes.len() >= mem::size_of::<T>());
 				$e(unsafe{*(bytes.repr().data as *const T)})
 			}
 
+			#[inline]
 			pub fn as_bytes(&self) -> &[u8]{
 				unsafe{slice::from_raw_parts(
 					&self.0 as *const T as *const u8,
@@ -67,6 +72,7 @@ macro_rules! impl_BitOp{
 
 
 ///Big endian byte order
+///
 ///Most significant byte first
 #[derive(Copy,Clone,Debug,Eq,PartialEq,Hash,Ord,PartialOrd)]
 pub struct BigEndian<T>(T);
@@ -74,6 +80,7 @@ impl<T> Endian<T> for BigEndian<T>{}
 impl<T> From<T> for BigEndian<T>
 	where T: num::PrimInt
 {
+			#[inline]
 	fn from(data: T) -> Self{
 		BigEndian(data.to_be())
 	}
@@ -81,6 +88,7 @@ impl<T> From<T> for BigEndian<T>
 impl<T> From<LittleEndian<T>> for BigEndian<T>
 	where T: num::PrimInt
 {
+			#[inline]
 	fn from(data: LittleEndian<T>) -> Self{
 		BigEndian(data.0.swap_bytes())
 	}
@@ -88,6 +96,7 @@ impl<T> From<LittleEndian<T>> for BigEndian<T>
 macro_rules! impl_Into_for_BigEndian{
 	( $t:ident ) => {
 		impl Into<$t> for BigEndian<$t>{
+			#[inline]
 			fn into(self) -> $t{
 				$t::from_be(self.0)
 			}
@@ -107,6 +116,7 @@ impl_Into_for_BigEndian!(isize);
 
 
 ///Little endian byte order
+///
 ///Least significant byte first
 #[derive(Copy,Clone,Debug,Eq,PartialEq,Hash,Ord,PartialOrd)]
 pub struct LittleEndian<T>(T);
@@ -114,6 +124,7 @@ impl<T> Endian<T> for LittleEndian<T>{}
 impl<T> From<T> for LittleEndian<T>
 	where T: num::PrimInt
 {
+			#[inline]
 	fn from(data: T) -> Self{
 		LittleEndian(data.to_le())
 	}
@@ -121,6 +132,7 @@ impl<T> From<T> for LittleEndian<T>
 impl<T> From<BigEndian<T>> for LittleEndian<T>
 	where T: num::PrimInt
 {
+			#[inline]
 	fn from(data: BigEndian<T>) -> Self{
 		LittleEndian(data.0.swap_bytes())
 	}
@@ -128,6 +140,7 @@ impl<T> From<BigEndian<T>> for LittleEndian<T>
 macro_rules! impl_Into_for_LittleEndian{
 	( $t:ident ) => {
 		impl Into<$t> for LittleEndian<$t>{
+			#[inline]
 			fn into(self) -> $t{
 				$t::from_le(self.0)
 			}
@@ -145,11 +158,11 @@ impl_Into_for_LittleEndian!(i64);
 impl_Into_for_LittleEndian!(isize);
 
 
-
+///Network byte order as defined by IETF RFC1700 [http://tools.ietf.org/html/rfc1700]
 pub type NetworkOrder<T> = BigEndian<T>;
 
 
-
+///Type aliases for primitive types
 pub mod types{
 	#![allow(non_camel_case_types)]
 
