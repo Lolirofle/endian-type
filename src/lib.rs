@@ -126,7 +126,7 @@ macro_rules! impl_for_LittleEndian{
 		impl From<$t> for LittleEndian<$t>{
 			#[inline]
 			fn from(data: $t) -> Self{
-				LittleEndian(data.to_be())
+				LittleEndian(data.to_le())
 			}
 		}
 
