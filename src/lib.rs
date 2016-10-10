@@ -10,7 +10,7 @@ use core::ops::{BitAnd,BitOr,BitXor};
 ///Type with a specified byte order
 pub trait Endian<T>{}
 
-macro_rules! impl_Endian{
+macro_rules! impl_EndianOps{
 	( for $e:ident) => {
 		impl<T> BitAnd for $e<T>
 			where T: BitAnd
@@ -76,7 +76,10 @@ macro_rules! impl_Endian{
 ///Most significant byte first
 #[derive(Copy,Clone,Debug,Eq,PartialEq,Hash,Ord,PartialOrd)]
 pub struct BigEndian<T>(T);
+impl_EndianOps!(for BigEndian);
+
 impl<T> Endian<T> for BigEndian<T>{}
+
 macro_rules! impl_for_BigEndian{
 	( $t:ident ) => {
 		impl Into<$t> for BigEndian<$t>{
@@ -101,7 +104,7 @@ macro_rules! impl_for_BigEndian{
 		}
 	}
 }
-impl_Endian!(for BigEndian);
+
 impl_for_BigEndian!(u16);
 impl_for_BigEndian!(u32);
 impl_for_BigEndian!(u64);
@@ -118,7 +121,10 @@ impl_for_BigEndian!(isize);
 ///Least significant byte first
 #[derive(Copy,Clone,Debug,Eq,PartialEq,Hash,Ord,PartialOrd)]
 pub struct LittleEndian<T>(T);
+impl_EndianOps!(for LittleEndian);
+
 impl<T> Endian<T> for LittleEndian<T>{}
+
 macro_rules! impl_for_LittleEndian{
 	( $t:ident ) => {
 		impl Into<$t> for LittleEndian<$t>{
@@ -143,7 +149,7 @@ macro_rules! impl_for_LittleEndian{
 		}
 	}
 }
-impl_Endian!(for LittleEndian);
+
 impl_for_LittleEndian!(u16);
 impl_for_LittleEndian!(u32);
 impl_for_LittleEndian!(u64);
