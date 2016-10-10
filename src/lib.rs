@@ -69,6 +69,30 @@ macro_rules! impl_EndianOps{
 	}
 }
 
+macro_rules! impl_for_Endian{
+	( $t:ident, $me:ident, $from_e:ident, $to_e:ident, $op:ident ) => {
+		impl Into<$t> for $me<$t>{
+			#[inline]
+			fn into(self) -> $t{
+				$t::$from_e(self.0)
+			}
+		}
+
+		impl From<$t> for $me<$t>{
+			#[inline]
+			fn from(data: $t) -> Self{
+				$me(data.$to_e())
+			}
+		}
+
+		impl From<$op<$t>> for $me<$t>{
+			#[inline]
+			fn from(data: $op<$t>) -> Self{
+				$me(data.0.swap_bytes())
+			}
+		}
+	}
+}
 
 
 ///Big endian byte order
@@ -82,37 +106,20 @@ impl<T> Endian<T> for BigEndian<T>{}
 
 macro_rules! impl_for_BigEndian{
 	( $t:ident ) => {
-		impl Into<$t> for BigEndian<$t>{
-			#[inline]
-			fn into(self) -> $t{
-				$t::from_be(self.0)
-			}
-		}
-
-		impl From<$t> for BigEndian<$t>{
-			#[inline]
-			fn from(data: $t) -> Self{
-				BigEndian(data.to_be())
-			}
-		}
-
-		impl From<LittleEndian<$t>> for BigEndian<$t>{
-			#[inline]
-			fn from(data: LittleEndian<$t>) -> Self{
-				BigEndian(data.0.swap_bytes())
-			}
-		}
+                impl_for_Endian!($t,BigEndian,from_be,to_be,LittleEndian);
 	}
 }
+
+impl_for_BigEndian!(usize);
+impl_for_BigEndian!(isize);
 
 impl_for_BigEndian!(u16);
 impl_for_BigEndian!(u32);
 impl_for_BigEndian!(u64);
-impl_for_BigEndian!(usize);
+
 impl_for_BigEndian!(i16);
 impl_for_BigEndian!(i32);
 impl_for_BigEndian!(i64);
-impl_for_BigEndian!(isize);
 
 
 
@@ -127,37 +134,19 @@ impl<T> Endian<T> for LittleEndian<T>{}
 
 macro_rules! impl_for_LittleEndian{
 	( $t:ident ) => {
-		impl Into<$t> for LittleEndian<$t>{
-			#[inline]
-			fn into(self) -> $t{
-				$t::from_le(self.0)
-			}
-		}
-
-		impl From<$t> for LittleEndian<$t>{
-			#[inline]
-			fn from(data: $t) -> Self{
-				LittleEndian(data.to_le())
-			}
-		}
-
-		impl From<BigEndian<$t>> for LittleEndian<$t>{
-			#[inline]
-			fn from(data: BigEndian<$t>) -> Self{
-				LittleEndian(data.0.swap_bytes())
-			}
-		}
+                impl_for_Endian!($t,LittleEndian,from_le,to_le,BigEndian);
 	}
 }
+
+impl_for_LittleEndian!(usize);
+impl_for_LittleEndian!(isize);
 
 impl_for_LittleEndian!(u16);
 impl_for_LittleEndian!(u32);
 impl_for_LittleEndian!(u64);
-impl_for_LittleEndian!(usize);
 impl_for_LittleEndian!(i16);
 impl_for_LittleEndian!(i32);
 impl_for_LittleEndian!(i64);
-impl_for_LittleEndian!(isize);
 
 
 ///Network byte order as defined by IETF RFC1700 [http://tools.ietf.org/html/rfc1700]
