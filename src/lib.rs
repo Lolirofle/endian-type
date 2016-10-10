@@ -1,11 +1,74 @@
-use std::{mem,slice};
-use std::convert::{From,Into};
-use std::ops::{BitAnd,BitOr,BitXor};
+
+extern crate core;
+
+// use core::intrinsics::transmute;
+use core::{mem,slice};
+// use core::mem::size_of;
+use core::convert::{From,Into};
+use core::ops::{BitAnd,BitOr,BitXor};
 
 ///Type with a specified byte order
-pub trait Endian<T>{}
+pub trait Endian<T>{
+    type Bytes;
+}
+
+macro_rules! EndianBytes{
+	($e:ident,$t:ty) => {
+		<$e<$t> as Endian<$t>>::Bytes
+	}
+}
+
+macro_rules! impl_EndianBytes{
+	($e:ident,$t:ty,$size:expr) => {
+		impl Endian<$t> for $e<$t> {
+			type Bytes = [u8; $size];
+		}
+
+		impl Into<EndianBytes!($e,$t)> for $e<$t> {
+			#[inline]
+			fn into(self) -> EndianBytes!($e,$t) {
+				unsafe { mem::transmute::<$t,EndianBytes!($e,$t)>(self.0) }
+			}
+		}
+		// Cannot  impl From<$e<$t>> for EndianBytes!($e,$t) { .. }
+		// because "only traits defined in the current crate can be
+		// implemented for a type parameter" like ::Bytes.
+
+		impl From<EndianBytes!($e,$t)> for $e<$t> {
+			#[inline]
+			fn from(v: EndianBytes!($e,$t)) -> Self {
+				$e( unsafe { mem::transmute::<EndianBytes!($e,$t),$t>(v) } )
+			}
+		}
+		// Provides Impl Into<$e<$t>> for EndianBytes!($e,$t) { .. }
+		// but maybe one should impl manually for inline
+	}
+}
+
+macro_rules! impl_EndianNoBytes{
+	($e:ident,$t:ty) => {
+		impl Endian<$t> for $e<$t> {
+			type Bytes = ();
+		}
+	}
+}
 
 macro_rules! impl_Endian{
+	($e:ident) => {
+		impl_EndianBytes!($e,u16,2);
+		impl_EndianBytes!($e,u32,4);
+		impl_EndianBytes!($e,u64,8);
+		impl_EndianNoBytes!($e,usize);
+		impl_EndianBytes!($e,i16,2);
+		impl_EndianBytes!($e,i32,4);
+		impl_EndianBytes!($e,i64,8);
+		impl_EndianNoBytes!($e,isize);
+		// impl_EndianBytes!($e,f32,4);
+		// impl_EndianBytes!($e,f64,8);
+	}
+}
+
+macro_rules! impl_EndianOps{
 	( for $e:ident) => {
 		impl<T> BitAnd for $e<T>
 			where T: BitAnd
@@ -64,6 +127,31 @@ macro_rules! impl_Endian{
 	}
 }
 
+macro_rules! impl_for_Endian{
+	( $t:ident, $me:ident, $from_e:ident, $to_e:ident, $op:ident ) => {
+		impl Into<$t> for $me<$t>{
+			#[inline]
+			fn into(self) -> $t{
+				$t::$from_e(self.0)
+			}
+		} 
+		// Seemingly supurfluous, except maybe for the inline
+
+		impl From<$t> for $me<$t>{
+			#[inline]
+			fn from(data: $t) -> Self{
+				$me(data.$to_e())
+			}
+		}
+
+		impl From<$op<$t>> for $me<$t>{
+			#[inline]
+			fn from(data: $op<$t>) -> Self{
+				$me(data.0.swap_bytes())
+			}
+		}
+	}
+}
 
 
 ///Big endian byte order
@@ -71,32 +159,17 @@ macro_rules! impl_Endian{
 ///Most significant byte first
 #[derive(Copy,Clone,Debug,Eq,PartialEq,Hash,Ord,PartialOrd)]
 pub struct BigEndian<T>(T);
-impl<T> Endian<T> for BigEndian<T>{}
+impl_EndianOps!(for BigEndian);
+
+// impl<T> Endian<T> for BigEndian<T>{}
+impl_Endian!(BigEndian);
+
 macro_rules! impl_for_BigEndian{
 	( $t:ident ) => {
-		impl Into<$t> for BigEndian<$t>{
-			#[inline]
-			fn into(self) -> $t{
-				$t::from_be(self.0)
-			}
-		}
-
-		impl From<$t> for BigEndian<$t>{
-			#[inline]
-			fn from(data: $t) -> Self{
-				BigEndian(data.to_be())
-			}
-		}
-
-		impl From<LittleEndian<$t>> for BigEndian<$t>{
-			#[inline]
-			fn from(data: LittleEndian<$t>) -> Self{
-				BigEndian(data.0.swap_bytes())
-			}
-		}
+                impl_for_Endian!($t,BigEndian,from_be,to_be,LittleEndian);
 	}
 }
-impl_Endian!(for BigEndian);
+
 impl_for_BigEndian!(u16);
 impl_for_BigEndian!(u32);
 impl_for_BigEndian!(u64);
@@ -105,7 +178,8 @@ impl_for_BigEndian!(i16);
 impl_for_BigEndian!(i32);
 impl_for_BigEndian!(i64);
 impl_for_BigEndian!(isize);
-
+// impl_for_BigEndian!(f32);
+// impl_for_BigEndian!(f64);
 
 
 ///Little endian byte order
@@ -113,32 +187,17 @@ impl_for_BigEndian!(isize);
 ///Least significant byte first
 #[derive(Copy,Clone,Debug,Eq,PartialEq,Hash,Ord,PartialOrd)]
 pub struct LittleEndian<T>(T);
-impl<T> Endian<T> for LittleEndian<T>{}
+impl_EndianOps!(for LittleEndian);
+
+// impl<T> Endian<T> for LittleEndian<T>{}
+impl_Endian!(LittleEndian);
+
 macro_rules! impl_for_LittleEndian{
 	( $t:ident ) => {
-		impl Into<$t> for LittleEndian<$t>{
-			#[inline]
-			fn into(self) -> $t{
-				$t::from_le(self.0)
-			}
-		}
-
-		impl From<$t> for LittleEndian<$t>{
-			#[inline]
-			fn from(data: $t) -> Self{
-				LittleEndian(data.to_le())
-			}
-		}
-
-		impl From<BigEndian<$t>> for LittleEndian<$t>{
-			#[inline]
-			fn from(data: BigEndian<$t>) -> Self{
-				LittleEndian(data.0.swap_bytes())
-			}
-		}
+                impl_for_Endian!($t,LittleEndian,from_le,to_le,BigEndian);
 	}
 }
-impl_Endian!(for LittleEndian);
+
 impl_for_LittleEndian!(u16);
 impl_for_LittleEndian!(u32);
 impl_for_LittleEndian!(u64);
@@ -147,6 +206,8 @@ impl_for_LittleEndian!(i16);
 impl_for_LittleEndian!(i32);
 impl_for_LittleEndian!(i64);
 impl_for_LittleEndian!(isize);
+// impl_for_LittleEndian!(f32);
+// impl_for_LittleEndian!(f64);
 
 
 ///Network byte order as defined by IETF RFC1700 [http://tools.ietf.org/html/rfc1700]
