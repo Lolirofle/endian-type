@@ -8,7 +8,65 @@ use core::convert::{From,Into};
 use core::ops::{BitAnd,BitOr,BitXor};
 
 ///Type with a specified byte order
-pub trait Endian<T>{}
+pub trait Endian<T>{
+    type Bytes;
+}
+
+macro_rules! EndianBytes{
+	($e:ident,$t:ty) => {
+		<$e<$t> as Endian<$t>>::Bytes
+	}
+}
+
+macro_rules! impl_EndianBytes{
+	($e:ident,$t:ty,$size:expr) => {
+		impl Endian<$t> for $e<$t> {
+			type Bytes = [u8; $size];
+		}
+
+		impl Into<EndianBytes!($e,$t)> for $e<$t> {
+			#[inline]
+			fn into(self) -> EndianBytes!($e,$t) {
+				unsafe { mem::transmute::<$t,EndianBytes!($e,$t)>(self.0) }
+			}
+		}
+		// Cannot  impl From<$e<$t>> for EndianBytes!($e,$t) { .. }
+		// because "only traits defined in the current crate can be
+		// implemented for a type parameter" like ::Bytes.
+
+		impl From<EndianBytes!($e,$t)> for $e<$t> {
+			#[inline]
+			fn from(v: EndianBytes!($e,$t)) -> Self {
+				$e( unsafe { mem::transmute::<EndianBytes!($e,$t),$t>(v) } )
+			}
+		}
+		// Provides Impl Into<$e<$t>> for EndianBytes!($e,$t) { .. }
+		// but maybe one should impl manually for inline
+	}
+}
+
+macro_rules! impl_EndianNoBytes{
+	($e:ident,$t:ty) => {
+		impl Endian<$t> for $e<$t> {
+			type Bytes = ();
+		}
+	}
+}
+
+macro_rules! impl_Endian{
+	($e:ident) => {
+		impl_EndianBytes!($e,u16,2);
+		impl_EndianBytes!($e,u32,4);
+		impl_EndianBytes!($e,u64,8);
+		impl_EndianNoBytes!($e,usize);
+		impl_EndianBytes!($e,i16,2);
+		impl_EndianBytes!($e,i32,4);
+		impl_EndianBytes!($e,i64,8);
+		impl_EndianNoBytes!($e,isize);
+		// impl_EndianBytes!($e,f32,4);
+		// impl_EndianBytes!($e,f64,8);
+	}
+}
 
 macro_rules! impl_EndianOps{
 	( for $e:ident) => {
@@ -76,7 +134,8 @@ macro_rules! impl_for_Endian{
 			fn into(self) -> $t{
 				$t::$from_e(self.0)
 			}
-		}
+		} 
+		// Seemingly supurfluous, except maybe for the inline
 
 		impl From<$t> for $me<$t>{
 			#[inline]
@@ -102,7 +161,8 @@ macro_rules! impl_for_Endian{
 pub struct BigEndian<T>(T);
 impl_EndianOps!(for BigEndian);
 
-impl<T> Endian<T> for BigEndian<T>{}
+// impl<T> Endian<T> for BigEndian<T>{}
+impl_Endian!(BigEndian);
 
 macro_rules! impl_for_BigEndian{
 	( $t:ident ) => {
@@ -110,17 +170,16 @@ macro_rules! impl_for_BigEndian{
 	}
 }
 
-impl_for_BigEndian!(usize);
-impl_for_BigEndian!(isize);
-
 impl_for_BigEndian!(u16);
 impl_for_BigEndian!(u32);
 impl_for_BigEndian!(u64);
-
+impl_for_BigEndian!(usize);
 impl_for_BigEndian!(i16);
 impl_for_BigEndian!(i32);
 impl_for_BigEndian!(i64);
-
+impl_for_BigEndian!(isize);
+// impl_for_BigEndian!(f32);
+// impl_for_BigEndian!(f64);
 
 
 ///Little endian byte order
@@ -130,7 +189,8 @@ impl_for_BigEndian!(i64);
 pub struct LittleEndian<T>(T);
 impl_EndianOps!(for LittleEndian);
 
-impl<T> Endian<T> for LittleEndian<T>{}
+// impl<T> Endian<T> for LittleEndian<T>{}
+impl_Endian!(LittleEndian);
 
 macro_rules! impl_for_LittleEndian{
 	( $t:ident ) => {
@@ -138,15 +198,16 @@ macro_rules! impl_for_LittleEndian{
 	}
 }
 
-impl_for_LittleEndian!(usize);
-impl_for_LittleEndian!(isize);
-
 impl_for_LittleEndian!(u16);
 impl_for_LittleEndian!(u32);
 impl_for_LittleEndian!(u64);
+impl_for_LittleEndian!(usize);
 impl_for_LittleEndian!(i16);
 impl_for_LittleEndian!(i32);
 impl_for_LittleEndian!(i64);
+impl_for_LittleEndian!(isize);
+// impl_for_LittleEndian!(f32);
+// impl_for_LittleEndian!(f64);
 
 
 ///Network byte order as defined by IETF RFC1700 [http://tools.ietf.org/html/rfc1700]
