@@ -1,6 +1,11 @@
-use std::{mem,slice};
-use std::convert::{From,Into};
-use std::ops::{BitAnd,BitOr,BitXor};
+
+extern crate core;
+
+// use core::intrinsics::transmute;
+use core::{mem,slice};
+// use core::mem::size_of;
+use core::convert::{From,Into};
+use core::ops::{BitAnd,BitOr,BitXor};
 
 ///Type with a specified byte order
 pub trait Endian<T>{}
