@@ -1,6 +1,13 @@
-use std::{mem,slice};
-use std::convert::{From,Into};
-use std::ops::{BitAnd,BitOr,BitXor};
+// Build without default features in order to include this library in #![no_std]
+// crates.
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(feature = "std")]
+extern crate core;
+
+use core::{mem,slice};
+use core::convert::{From,Into};
+use core::ops::{BitAnd,BitOr,BitXor};
 
 ///Type with a specified byte order
 pub trait Endian<T>{}
