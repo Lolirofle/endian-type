@@ -1,7 +1,7 @@
 [package]
 name = "endian-type"
 version = "0.1.2"
-authors = ["Lolirofle <lolipopple@hotmail.com>"]
+authors = ["Lolirofle <lolipopple@hotmail.com>", "Sean Wilson <spwilson27@gmail.com>"]
 description = "Type safe wrappers for types with a defined byte order"
 #documentation = "..."
 homepage = "https://github.com/Lolirofle/endian-type"
@@ -9,3 +9,12 @@ repository = "https://github.com/Lolirofle/endian-type.git"
 #readme = "README.md"
 keywords = ["endian","byteorder"]
 license = "MIT"
+
+[features]
+default = ["std", "use_num"]
+std = []
+use_num = []
+
+[dependencies.num]
+version = "0.2.1"
+default-features = false
