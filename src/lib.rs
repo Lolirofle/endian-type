@@ -74,10 +74,10 @@ pub struct BigEndian<T>(T);
 impl<T> Endian<T> for BigEndian<T>{}
 macro_rules! impl_for_BigEndian{
 	( $t:ident ) => {
-		impl Into<$t> for BigEndian<$t>{
+		impl From<BigEndian<$t>> for $t {
 			#[inline]
-			fn into(self) -> $t{
-				$t::from_be(self.0)
+			fn from(data: BigEndian<$t>) -> $t {
+				$t::from_be(data.0)
 			}
 		}
 
@@ -116,10 +116,10 @@ pub struct LittleEndian<T>(T);
 impl<T> Endian<T> for LittleEndian<T>{}
 macro_rules! impl_for_LittleEndian{
 	( $t:ident ) => {
-		impl Into<$t> for LittleEndian<$t>{
+		impl From<LittleEndian<$t>> for $t {
 			#[inline]
-			fn into(self) -> $t{
-				$t::from_le(self.0)
+			fn from(data: LittleEndian<$t>) -> $t {
+				$t::from_le(data.0)
 			}
 		}
 
