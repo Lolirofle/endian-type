@@ -1,3 +1,6 @@
+#[cfg(feature = "use_num")]
+extern crate num;
+
 use std::{mem,slice};
 use std::convert::{From,Into};
 use std::ops::{BitAnd,BitOr,BitXor};
@@ -81,6 +84,17 @@ macro_rules! impl_for_BigEndian{
 			}
 		}
 
+        #[cfg(feature = "use_num")]
+        impl num::ToPrimitive for BigEndian<$t> {
+            fn to_i64(&self) -> Option<i64> {
+                Some($t::from_be(self.0) as i64)
+            }
+
+            fn to_u64(&self) -> Option<u64> {
+                Some($t::from_be(self.0) as u64)
+            }
+        }
+
 		impl From<$t> for BigEndian<$t>{
 			#[inline]
 			fn from(data: $t) -> Self{
@@ -136,6 +150,17 @@ macro_rules! impl_for_LittleEndian{
 				LittleEndian(data.0.swap_bytes())
 			}
 		}
+
+        #[cfg(feature = "use_num")]
+        impl num::ToPrimitive for LittleEndian<$t> {
+            fn to_i64(&self) -> Option<i64> {
+                Some($t::from_le(self.0) as i64)
+            }
+
+            fn to_u64(&self) -> Option<u64> {
+                Some($t::from_le(self.0) as u64)
+            }
+        }
 	}
 }
 impl_Endian!(for LittleEndian);
