@@ -9,3 +9,7 @@ repository = "https://github.com/Lolirofle/endian-type.git"
 #readme = "README.md"
 keywords = ["endian","byteorder"]
 license = "MIT"
+
+[features]
+default = ["std"]
+std = []
