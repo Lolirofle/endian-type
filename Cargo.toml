@@ -2,7 +2,7 @@
 name = "endian-type"
 version = "0.2.0"
 authors = ["Lolirofle <lolipopple@hotmail.com>"]
-categories = ["compression", "encoding"]
+categories = ["encoding"]
 edition = "2021"
 keywords = ["byteorder", "endian", "no_std"]
 license = "MIT"
